@@ -6,6 +6,7 @@ Gem::Specification.new do |s|
   s.authors     = ['Stephen McCarthy']
   s.email       = 'sjmccarthy@gmail.com'
   s.summary     = 'This gem implements ring signatures, built on top of ECDSA, as specified by CryptoNote'
+  s.description = 'Ring Signatures allow someone to non-interactively sign a message which can be verified against a set of chosen public keys.'
   s.homepage    = 'https://github.com/jamoes/ring_sig'
   s.license     = 'MIT'
 
@@ -14,12 +15,12 @@ Gem::Specification.new do |s|
   s.test_files  = s.files.grep(%r{^(test|spec|features)/})
 
   s.add_development_dependency 'bundler', '~> 1.3'
-  s.add_development_dependency 'rake'
+  s.add_development_dependency 'rake', '~> 0'
   s.add_development_dependency 'rspec', '~> 3.0'
-  s.add_development_dependency 'simplecov'
-  s.add_development_dependency 'yard'
-  s.add_development_dependency 'markdown'
-  s.add_development_dependency 'redcarpet'
+  s.add_development_dependency 'simplecov', '~> 0'
+  s.add_development_dependency 'yard', '~> 0'
+  s.add_development_dependency 'markdown', '~> 0'
+  s.add_development_dependency 'redcarpet', '~> 0'
 
   s.add_runtime_dependency 'ecdsa', '~> 1.1'
 end
