@@ -60,8 +60,8 @@ module RingSig
     #   and the set of public keys (in the correct order) for verifying.
     def sign(message, foreign_keys)
       raise ArgumentError "Cannot sign without a private key" unless private_key
-      raise ArgumentError "Foreign keys must all have to the same group" unless foreign_keys.all?{|e| e.group == group}
-      raise ArgumentError "Foreign keys must all have to the same hash_algorithm" unless foreign_keys.all?{|e| e.hash_algorithm == hash_algorithm}
+      raise ArgumentError "Foreign keys must all have the same group" unless foreign_keys.all?{|e| e.group == group}
+      raise ArgumentError "Foreign keys must all have the same hash_algorithm" unless foreign_keys.all?{|e| e.hash_algorithm == hash_algorithm}
 
       message_digest = @hasher.hash_string(message)
       seed = @hasher.hash_array([private_key, message_digest])
