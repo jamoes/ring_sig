@@ -37,7 +37,7 @@ module RingSig
 
     # Creates a new instance of {PrivateKey} from a hex string.
     #
-    # @param octet_string [String]
+    # @param hex_string [String]
     # @param group [ECDSA::Group]
     # @param hash_algorithm [#digest]
     # @return [PrivateKey]
