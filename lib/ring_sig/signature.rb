@@ -31,7 +31,7 @@ module RingSig
 
       @group = group
       @hash_algorithm = hash_algorithm
-      @hasher = RingSig::Hasher.new(group, hash_algorithm)
+      @hasher = Hasher.new(group, hash_algorithm)
     end
 
     # Creates a new instance of {Signature} from a der string.
@@ -47,7 +47,7 @@ module RingSig
       c_array = asn1.value[1].value.map{|i| i.value.to_i}
       r_array = asn1.value[2].value.map{|i| i.value.to_i}
 
-      RingSig::Signature.new(key_image, c_array, r_array, group: group, hash_algorithm: hash_algorithm)
+      Signature.new(key_image, c_array, r_array, group: group, hash_algorithm: hash_algorithm)
     end
 
     # Creates a new instance of {Signature} from a hex string.
@@ -57,13 +57,14 @@ module RingSig
     # @param hash_algorithm [#digest]
     # @return [Signature]
     def self.from_hex(hex_string, group: ECDSA::Group::Secp256k1, hash_algorithm: OpenSSL::Digest::SHA256)
-      RingSig::Signature.from_der([hex_string].pack('H*'), group: group, hash_algorithm: hash_algorithm)
+      Signature.from_der([hex_string].pack('H*'), group: group, hash_algorithm: hash_algorithm)
     end
 
     # Encodes this signature into a der string. The encoded data contains
     # the key_image, c_array, and r_array. It does not contain the group
     # or hash_algorithm.
     #
+    # @param compression [Boolean]
     # @return [String]
     def to_der(compression: true)
       OpenSSL::ASN1::Sequence.new([
@@ -77,6 +78,7 @@ module RingSig
     # the key_image, c_array, and r_array. It does not contain the group
     # or hash_algorithm.
     #
+    # @param compression [Boolean]
     # @return [String]
     def to_hex(compression: true)
       to_der(compression: compression).unpack('H*').first
@@ -85,15 +87,15 @@ module RingSig
     # Verifies this signature against an ordered set of public keys.
     #
     # @param message [String]
-    # @param public_keys [Array<Key>]
+    # @param public_keys [Array<PublicKey>]
     # @return [Boolean] true if the signature verifies, false otherwise.
     def verify(message, public_keys)
       ll_array = []
       rr_array = []
 
       public_keys.each_with_index do |k, i|
-        ll_array[i] = (group.generator * r_array[i]) + (k.public_key * c_array[i])
-        rr_array[i] = (@hasher.hash_point(k.public_key) * (r_array[i]) + key_image * c_array[i])
+        ll_array[i] = (group.generator * r_array[i]) + (k.point * c_array[i])
+        rr_array[i] = (@hasher.hash_point(k.point) * (r_array[i]) + key_image * c_array[i])
       end
 
       c_sum = c_array.inject{|a, b| a + b} % group.order
