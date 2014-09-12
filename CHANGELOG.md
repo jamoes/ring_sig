@@ -27,22 +27,23 @@ This release breaks API compatibility with version 0.0.1.
 ----
 Released on 2014-09-09
 
-- All core functionality is implemented:
-  - `Key` class
-    - `sign` method
-    - `key_image` method
-    - `drop_private_key` method
-    - `public_key` and `private_key` attributes
-    - `group` and `hash_algorithm` attributes
-  - `Signature` class
-    - `verify` method
-    - `components` method
-    - `to_hex`, `to_der`, `from_hex`, and `from_der` methods
-    - `key_image`, `c_array`, and `r_array` attributes
-    - `group` and `hash_algorithm` attributes
-  - `Hasher` class
-    - `hash_string` method
-    - `hash_array` method
-    - `hash_point` method
-    - `shuffle` method
-    - `group` and `algorithm` attributes
+All core functionality is implemented:
+
+- `Key` class
+  - `sign` method
+  - `key_image` method
+  - `drop_private_key` method
+  - `public_key` and `private_key` attributes
+  - `group` and `hash_algorithm` attributes
+- `Signature` class
+  - `verify` method
+  - `components` method
+  - `to_hex`, `to_der`, `from_hex`, and `from_der` methods
+  - `key_image`, `c_array`, and `r_array` attributes
+  - `group` and `hash_algorithm` attributes
+- `Hasher` class
+  - `hash_string` method
+  - `hash_array` method
+  - `hash_point` method
+  - `shuffle` method
+  - `group` and `algorithm` attributes
