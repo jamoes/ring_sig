@@ -92,6 +92,15 @@ ECDSA group. You can specify alternates if you'd like:
 key = RingSig::PrivateKey.new(1, group: ECDSA::Group::Secp256r1, hash_algorithm: OpenSSL::Digest::RIPEMD160)
 ```
 
+You can also specify module-wide alternate defaults:
+```ruby
+RingSig.default_group = ECDSA::Group::Secp256r1
+RingSig.default_hash_algorithm = OpenSSL::Digest::RIPEMD160
+key = RingSig::PrivateKey.new(1)
+puts key.group # ECDSA::Group::Secp256r1
+puts key.hash_algorithm # OpenSSL::Digest::RIPEMD160
+```
+
 ## Standards
 
 There currently aren't any standards around Ring Signatures that I know of. This
