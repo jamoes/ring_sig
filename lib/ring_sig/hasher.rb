@@ -15,7 +15,7 @@ module RingSig
     def initialize(opts = {})
       @group = opts.delete(:group) { RingSig.default_group }
       @hash_algorithm = opts.delete(:hash_algorithm) { RingSig.default_hash_algorithm }
-      raise ArgumentError, "Unknown options #{opts.keys.join(', ')}" unless opts.empty?
+      raise ArgumentError, "Unknown opts: #{opts.keys.join(', ')}" unless opts.empty?
     end
 
     # Continuously hashes until a value less than the group's order is found.
