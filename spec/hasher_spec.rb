@@ -4,7 +4,7 @@ describe RingSig::Hasher do
   context 'Standard: SHA256 hash algorithm, secp256k1 group' do
     group = ECDSA::Group::Secp256k1
     hash_algorithm = OpenSSL::Digest::SHA256
-    hasher = RingSig::Hasher.new(group, hash_algorithm)
+    hasher = RingSig::Hasher.new(group: group, hash_algorithm: hash_algorithm)
 
     describe '#hash_string' do
       it 'hashes "a"' do
@@ -67,7 +67,7 @@ describe RingSig::Hasher do
       SimpleHashAlgorithm
     end
 
-    let(:hasher) { RingSig::Hasher.new(group, hash_algorithm) }
+    let(:hasher) { RingSig::Hasher.new(group: group, hash_algorithm: hash_algorithm) }
 
     # We test the hash_algorithm itself in this context, since we implemented our own simple hash_algorithm.
     shared_examples_for 'hash algorithm' do |input, expected_value|

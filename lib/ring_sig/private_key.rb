@@ -20,38 +20,50 @@ module RingSig
     # Creates a new instance of {PrivateKey}.
     #
     # @param value [Integer]
-    # @param group [ECDSA::Group]
-    # @param hash_algorithm [#digest]
-    def initialize(value, group: ECDSA::Group::Secp256k1, hash_algorithm: OpenSSL::Digest::SHA256)
+    # @param opts [Hash]
+    # @option opts :group [ECDSA::Group]
+    # @option opts :hash_algorithm [#digest]
+    def initialize(value, opts = {})
+      @group = opts.delete(:group) { RingSig.default_group }
+      @hash_algorithm = opts.delete(:hash_algorithm) { RingSig.default_hash_algorithm }
+      raise ArgumentError, "Unknown opts: #{opts.keys.join(', ')}" unless opts.empty?
+
       raise ArgumentError, "Value is not an integer" unless value.is_a?(Integer)
       raise ArgumentError, "Value is too small" if value < 1
       raise ArgumentError, "Value is too large" if value >= group.order
 
       @value = value
       @public_key = PublicKey.new(group.generator.multiply_by_scalar(value), group: group)
-
-      @group = group
-      @hash_algorithm = hash_algorithm
-      @hasher = Hasher.new(group, hash_algorithm)
+      @hasher = Hasher.new(group: group, hash_algorithm: hash_algorithm)
     end
 
     # Creates a new instance of {PrivateKey} from a hex string.
     #
     # @param hex_string [String]
-    # @param group [ECDSA::Group]
-    # @param hash_algorithm [#digest]
+    # @param opts [Hash]
+    # @option opts :group [ECDSA::Group]
+    # @option opts :hash_algorithm [#digest]
     # @return [PrivateKey]
-    def self.from_hex(hex_string, group: ECDSA::Group::Secp256k1, hash_algorithm: OpenSSL::Digest::SHA256)
+    def self.from_hex(hex_string, opts = {})
+      group = opts.delete(:group) { RingSig.default_group }
+      hash_algorithm = opts.delete(:hash_algorithm) { RingSig.default_hash_algorithm }
+      raise ArgumentError, "Unknown opts: #{opts.keys.join(', ')}" unless opts.empty?
+
       self.from_octet([hex_string].pack('H*'), group: group, hash_algorithm: hash_algorithm)
     end
 
     # Creates a new instance of {PrivateKey} from an octet string.
     #
     # @param octet_string [String]
-    # @param group [ECDSA::Group]
-    # @param hash_algorithm [#digest]
+    # @param opts [Hash]
+    # @option opts :group [ECDSA::Group]
+    # @option opts :hash_algorithm [#digest]
     # @return [PrivateKey]
-    def self.from_octet(octet_string, group: ECDSA::Group::Secp256k1, hash_algorithm: OpenSSL::Digest::SHA256)
+    def self.from_octet(octet_string, opts = {})
+      group = opts.delete(:group) { RingSig.default_group }
+      hash_algorithm = opts.delete(:hash_algorithm) { RingSig.default_hash_algorithm }
+      raise ArgumentError, "Unknown opts: #{opts.keys.join(', ')}" unless opts.empty?
+
       value = ECDSA::Format::FieldElementOctetString.decode(octet_string, group.field)
       PrivateKey.new(value, group: group, hash_algorithm: hash_algorithm)
     end
@@ -96,7 +108,7 @@ module RingSig
       c_array, r_array = generate_c_r(all_keys, q_array, w_array, challenge)
 
       public_keys = all_keys.map(&:public_key)
-      signature = Signature.new(key_image, c_array, r_array, group: group, hash_algorithm: @hasher.algorithm)
+      signature = Signature.new(key_image, c_array, r_array, group: group, hash_algorithm: hash_algorithm)
 
       [signature, public_keys]
     end

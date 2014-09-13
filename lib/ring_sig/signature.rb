@@ -21,26 +21,34 @@ module RingSig
     # @param key_image [ECDSA::Point]
     # @param c_array [Array<Integer>]
     # @param r_array [Array<Integer>]
-    # @param group [ECDSA::Group]
-    # @param hash_algorithm [#digest]
-    def initialize(key_image, c_array, r_array, group: ECDSA::Group::Secp256k1, hash_algorithm: OpenSSL::Digest::SHA256)
+    # @param opts [Hash]
+    # @option opts :group [ECDSA::Group]
+    # @option opts :hash_algorithm [#digest]
+    def initialize(key_image, c_array, r_array, opts = {})
+      @group = opts.delete(:group) { RingSig.default_group }
+      @hash_algorithm = opts.delete(:hash_algorithm) { RingSig.default_hash_algorithm }
+      raise ArgumentError, "Unknown opts: #{opts.keys.join(', ')}" unless opts.empty?
+
       @key_image, @c_array, @r_array = key_image, c_array, r_array
       key_image.is_a?(ECDSA::Point) or raise ArgumentError, 'key_image is not an ECDSA::Point.'
       c_array.is_a?(Array) or raise ArgumentError, 'c_array is not an array.'
       r_array.is_a?(Array) or raise ArgumentError, 'r_array is not an array.'
 
-      @group = group
-      @hash_algorithm = hash_algorithm
-      @hasher = Hasher.new(group, hash_algorithm)
+      @hasher = Hasher.new(group: group, hash_algorithm: hash_algorithm)
     end
 
     # Creates a new instance of {Signature} from a der string.
     #
     # @param der_string [String]
-    # @param group [ECDSA::Group]
-    # @param hash_algorithm [#digest]
+    # @param opts [Hash]
+    # @option opts :group [ECDSA::Group]
+    # @option opts :hash_algorithm [#digest]
     # @return [Signature]
-    def self.from_der(der_string, group: ECDSA::Group::Secp256k1, hash_algorithm: OpenSSL::Digest::SHA256)
+    def self.from_der(der_string, opts = {})
+      group = opts.delete(:group) { RingSig.default_group }
+      hash_algorithm = opts.delete(:hash_algorithm) { RingSig.default_hash_algorithm }
+      raise ArgumentError, "Unknown opts: #{opts.keys.join(', ')}" unless opts.empty?
+
       asn1 = OpenSSL::ASN1.decode(der_string)
 
       key_image = ECDSA::Format::PointOctetString.decode(asn1.value[0].value, group)
@@ -53,10 +61,15 @@ module RingSig
     # Creates a new instance of {Signature} from a hex string.
     #
     # @param hex_string [String]
-    # @param group [ECDSA::Group]
-    # @param hash_algorithm [#digest]
+    # @param opts [Hash]
+    # @option opts :group [ECDSA::Group]
+    # @option opts :hash_algorithm [#digest]
     # @return [Signature]
-    def self.from_hex(hex_string, group: ECDSA::Group::Secp256k1, hash_algorithm: OpenSSL::Digest::SHA256)
+    def self.from_hex(hex_string, opts = {})
+      group = opts.delete(:group) { RingSig.default_group }
+      hash_algorithm = opts.delete(:hash_algorithm) { RingSig.default_hash_algorithm }
+      raise ArgumentError, "Unknown opts: #{opts.keys.join(', ')}" unless opts.empty?
+
       Signature.from_der([hex_string].pack('H*'), group: group, hash_algorithm: hash_algorithm)
     end
 
@@ -64,9 +77,13 @@ module RingSig
     # the key_image, c_array, and r_array. It does not contain the group
     # or hash_algorithm.
     #
-    # @param compression [Boolean]
+    # @param opts [Hash]
+    # @option opts :compression [Boolean]
     # @return [String]
-    def to_der(compression: true)
+    def to_der(opts = {})
+      compression = opts.delete(:compression) { true }
+      raise ArgumentError, "Unknown opts: #{opts.keys.join(', ')}" unless opts.empty?
+
       OpenSSL::ASN1::Sequence.new([
         OpenSSL::ASN1::OctetString.new(ECDSA::Format::PointOctetString.encode(key_image, compression: compression)),
         OpenSSL::ASN1::Sequence.new(c_array.map{|i| OpenSSL::ASN1::Integer.new(i)}),
@@ -78,9 +95,13 @@ module RingSig
     # the key_image, c_array, and r_array. It does not contain the group
     # or hash_algorithm.
     #
-    # @param compression [Boolean]
+    # @param opts [Hash]
+    # @option opts :compression [Boolean]
     # @return [String]
-    def to_hex(compression: true)
+    def to_hex(opts = {})
+      compression = opts.delete(:compression) { true }
+      raise ArgumentError, "Unknown opts: #{opts.keys.join(', ')}" unless opts.empty?
+
       to_der(compression: compression).unpack('H*').first
     end
 

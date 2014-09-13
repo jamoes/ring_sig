@@ -5,16 +5,17 @@ module RingSig
     attr_reader :group
 
     # @return [#digest]
-    attr_reader :algorithm
-
+    attr_reader :hash_algorithm
 
     # Creates a new instance of {Hasher}.
     #
-    # @param group [ECDSA::Group]
-    # @param algorithm [#digest]
-    def initialize(group, algorithm)
-      @group = group
-      @algorithm = algorithm
+    # @param opts [Hash]
+    # @option opts :group [ECDSA::Group]
+    # @option opts :hash_algorithm [#digest]
+    def initialize(opts = {})
+      @group = opts.delete(:group) { RingSig.default_group }
+      @hash_algorithm = opts.delete(:hash_algorithm) { RingSig.default_hash_algorithm }
+      raise ArgumentError, "Unknown options #{opts.keys.join(', ')}" unless opts.empty?
     end
 
     # Continuously hashes until a value less than the group's order is found.
@@ -24,7 +25,7 @@ module RingSig
     def hash_string(s)
       n = nil
       loop do
-        s = @algorithm.digest(s)
+        s = @hash_algorithm.digest(s)
         n = s.unpack('H*').first.to_i(16)
         break if n < @group.order
       end
