@@ -5,6 +5,18 @@ This gem follows [Semantic Versioning 2.0.0](http://semver.org/spec/v2.0.0.html)
 All classes and public methods are part of the public API, unless explicitly
 noted otherwise in their documentation.
 
+0.2.0
+----
+Released on 2014-09-12
+
+This release breaks API compatibility with version 0.1.0.
+
+- Add support for ruby 1.9, including jruby-19mode.
+- Add `RingSig.default_group` and `RingSig.defaut_hash_algorithm` attributes.
+- Change `Hasher` constructor so that `group` and `hash_algorithm` attributes
+  are passed in as options rather than explicit arguments.
+
+
 0.1.0
 ----
 Released on 2014-09-11
