@@ -11,65 +11,44 @@ module RingSig
     # @return [PublicKey]
     attr_reader :public_key
 
-    # @return [ECDSA::Group]
-    attr_reader :group
-
-    # @return [#digest]
-    attr_reader :hash_algorithm
+    # @return [Hasher]
+    attr_reader :hasher
 
     # Creates a new instance of {PrivateKey}.
     #
     # @param value [Integer]
-    # @param opts [Hash]
-    # @option opts :group [ECDSA::Group]
-    # @option opts :hash_algorithm [#digest]
-    def initialize(value, opts = {})
-      @group = opts.delete(:group) { RingSig.default_group }
-      @hash_algorithm = opts.delete(:hash_algorithm) { RingSig.default_hash_algorithm }
-      raise ArgumentError, "Unknown opts: #{opts.keys.join(', ')}" unless opts.empty?
-
+    # @param hasher [Hasher]
+    def initialize(value, hasher = RingSig::Hasher::Secp256k1_Sha256)
       raise ArgumentError, "Value is not an integer" unless value.is_a?(Integer)
       raise ArgumentError, "Value is too small" if value < 1
-      raise ArgumentError, "Value is too large" if value >= group.order
+      raise ArgumentError, "Value is too large" if value >= hasher.group.order
 
       @value = value
-      @public_key = PublicKey.new(group.generator.multiply_by_scalar(value), group: group)
-      @hasher = Hasher.new(group: group, hash_algorithm: hash_algorithm)
+      @hasher = hasher
+      @public_key = PublicKey.new(hasher.group.generator * value, hasher)
     end
 
     # Creates a new instance of {PrivateKey} from a hex string.
     #
     # @param hex_string [String]
-    # @param opts [Hash]
-    # @option opts :group [ECDSA::Group]
-    # @option opts :hash_algorithm [#digest]
+    # @param hasher [Hasher]
     # @return [PrivateKey]
-    def self.from_hex(hex_string, opts = {})
-      group = opts.delete(:group) { RingSig.default_group }
-      hash_algorithm = opts.delete(:hash_algorithm) { RingSig.default_hash_algorithm }
-      raise ArgumentError, "Unknown opts: #{opts.keys.join(', ')}" unless opts.empty?
-
-      self.from_octet([hex_string].pack('H*'), group: group, hash_algorithm: hash_algorithm)
+    def self.from_hex(hex_string, hasher = RingSig::Hasher::Secp256k1_Sha256)
+      self.from_octet([hex_string].pack('H*'), hasher)
     end
 
     # Creates a new instance of {PrivateKey} from an octet string.
     #
     # @param octet_string [String]
-    # @param opts [Hash]
-    # @option opts :group [ECDSA::Group]
-    # @option opts :hash_algorithm [#digest]
+    # @param hasher [Hasher]
     # @return [PrivateKey]
-    def self.from_octet(octet_string, opts = {})
-      group = opts.delete(:group) { RingSig.default_group }
-      hash_algorithm = opts.delete(:hash_algorithm) { RingSig.default_hash_algorithm }
-      raise ArgumentError, "Unknown opts: #{opts.keys.join(', ')}" unless opts.empty?
-
-      value = ECDSA::Format::FieldElementOctetString.decode(octet_string, group.field)
-      PrivateKey.new(value, group: group, hash_algorithm: hash_algorithm)
+    def self.from_octet(octet_string, hasher = RingSig::Hasher::Secp256k1_Sha256)
+      value = ECDSA::Format::FieldElementOctetString.decode(octet_string, hasher.group.field)
+      PrivateKey.new(value, hasher)
     end
 
     # Encodes this private key into an octet string. The encoded data contains
-    # only the value. It does not contain the group or hash_algorithm.
+    # only the value. It does not contain the hasher.
     #
     # @return [String]
     def to_hex
@@ -77,11 +56,11 @@ module RingSig
     end
 
     # Encodes this public key into a hex string. The encoded data contains
-    # only the value. It does not contain the group or hash_algorithm.
+    # only the value. It does not contain the hasher.
     #
     # @return [String]
     def to_octet
-      ECDSA::Format::FieldElementOctetString.encode(value, group.field)
+      ECDSA::Format::FieldElementOctetString.encode(value, hasher.group.field)
     end
 
     # Signs a message with this key's private key and a set of foreign public
@@ -95,27 +74,27 @@ module RingSig
     # @return [Array(Signature, Array<PublicKey>)] A pair containing the signature
     #   and the set of public keys (in the correct order) for verifying.
     def sign(message, foreign_keys)
-      raise ArgumentError "Foreign keys must all have the same group" unless foreign_keys.all?{ |e| e.group == group }
+      raise ArgumentError "Foreign keys must all have the same hasher" unless foreign_keys.all?{ |e| e.hasher == hasher }
 
-      message_digest = @hasher.hash_string(message)
-      seed = @hasher.hash_array([value, message_digest])
+      message_digest = hasher.hash_string(message)
+      seed = hasher.hash_array([value, message_digest])
 
-      all_keys = @hasher.shuffle([self] + foreign_keys, seed)
+      all_keys = hasher.shuffle([self] + foreign_keys, seed)
 
       q_array, w_array = generate_q_w(all_keys, seed)
       ll_array, rr_array = generate_ll_rr(all_keys, q_array, w_array)
-      challenge = @hasher.hash_array([message_digest] + ll_array + rr_array)
+      challenge = hasher.hash_array([message_digest] + ll_array + rr_array)
       c_array, r_array = generate_c_r(all_keys, q_array, w_array, challenge)
 
       public_keys = all_keys.map(&:public_key)
-      signature = Signature.new(key_image, c_array, r_array, group: group, hash_algorithm: hash_algorithm)
+      signature = Signature.new(key_image, c_array, r_array, hasher)
 
       [signature, public_keys]
     end
 
     # @return [ECDSA::Point] the key image.
     def key_image
-      @key_image ||= @hasher.hash_point(point) * value
+      @key_image ||= hasher.hash_point(point) * value
     end
 
     # @return [ECDSA::Point] the public key's point.
@@ -126,7 +105,7 @@ module RingSig
     # @return [Boolean] true if the private keys are equal.
     def ==(other)
       return false unless other.is_a?(PrivateKey)
-      value == other.value && group == other.group && hash_algorithm == other.hash_algorithm
+      value == other.value && hasher == other.hasher
     end
 
     private
@@ -135,9 +114,9 @@ module RingSig
       q_array, w_array = [], []
 
       all_keys.each_with_index do |k, i|
-        q_array[i] = @hasher.hash_array(['q', seed, i])
+        q_array[i] = hasher.hash_array(['q', seed, i])
         w_array[i] = 0
-        w_array[i] = @hasher.hash_array(['w', seed, i]) if k.is_a?(PublicKey)
+        w_array[i] = hasher.hash_array(['w', seed, i]) if k.is_a?(PublicKey)
       end
 
       [q_array, w_array]
@@ -147,8 +126,8 @@ module RingSig
       ll_array, rr_array = [], []
 
       all_keys.each_with_index do |k, i|
-        ll_array[i] = group.generator * q_array[i]
-        rr_array[i] = @hasher.hash_point(k.point) * q_array[i]
+        ll_array[i] = hasher.group.generator * q_array[i]
+        rr_array[i] = hasher.hash_point(k.point) * q_array[i]
         if k.is_a?(PublicKey)
           ll_array[i] += k.point * w_array[i]
           rr_array[i] += key_image * w_array[i]
@@ -166,8 +145,8 @@ module RingSig
           c_array[i] = w_array[i]
           r_array[i] = q_array[i]
         else
-          c_array[i] = (challenge - w_array.inject{|a, b| a + b}) % group.order
-          r_array[i] = (q_array[i] - c_array[i] * k.value) % group.order
+          c_array[i] = (challenge - w_array.inject{|a, b| a + b}) % hasher.group.order
+          r_array[i] = (q_array[i] - c_array[i] * k.value) % hasher.group.order
         end
       end
 

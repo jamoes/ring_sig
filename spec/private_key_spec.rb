@@ -105,33 +105,22 @@ describe RingSig::PrivateKey do
     end
   end
 
-  context 'alternate defaults' do
+  context 'alternate hasher' do
     before(:all) do
-      @old_default_group = RingSig.default_group
-      @old_default_hash_algorithm = RingSig.default_hash_algorithm
-      RingSig.default_group = ECDSA::Group::Secp256r1
-      RingSig.default_hash_algorithm = OpenSSL::Digest::RIPEMD160
-
-      @key = RingSig::PrivateKey.new(1)
+      @key = RingSig::PrivateKey.new(1, RingSig::Hasher::Secp160k1_Ripemd160)
       @foreign_keys = [
-          RingSig::PrivateKey.new(2).public_key,
-          RingSig::PrivateKey.new(3).public_key,
-          RingSig::PrivateKey.new(4).public_key,
+          RingSig::PrivateKey.new(2, RingSig::Hasher::Secp160k1_Ripemd160).public_key,
+          RingSig::PrivateKey.new(3, RingSig::Hasher::Secp160k1_Ripemd160).public_key,
         ]
-    end
-
-    after(:all) do
-      RingSig.default_group = @old_default_group
-      RingSig.default_hash_algorithm = @old_default_hash_algorithm
     end
 
     describe '#sign' do
       it 'signs and verifies' do
         sig, public_keys = @key.sign(message, @foreign_keys)
 
-        expect(sig.to_hex).to eq '3081e804210242ea46f23d6dc4e4515f2b1001734cf2c4a09b9ab169a588bf01a13b9e553de03067022100ffffffff00000000fffffffe714565846c5397cd4e5e24b41dfd02b75761d074021500881bf1e9c67d05c7a8a6ef93552a785246603436021500e17e885e1b5c59e80a5ed90ae26bea5067b3314a02146655e2724456f7d8d21238d797e0a809a3013337305a02150198482b6231394361df3ad5b577c70953b2572c9f02141cd9f8cc0df48519ecd6ad6e354ca634c8b604c20214361d1207afcdb5c041df20efac5496b26243403a0215008fddaf160ecfaed0c2048e6f018c933fc398e33b'
+        expect(sig.to_hex).to eq '3081a004150335d6eb01d7c658c2aae34e1e910e1b44c993069d30430214685baa33eacec37ff3530d710ca852731e1ac7b0021500881bf1e9c67d05c7a8a6ef93552a7852466034360214211b72b5e3a934d0e096441c5208b4322a83b7a130420214098d90e6e0a5e08186815be4a20a41480d55d7c202141cd9f8cc0df48519ecd6ad6e354ca634c8b604c2021415019f51cc2480ef6148dcd35a4be28037bf8899'
 
-        expected_public_keys = [0, 2, 1, 3].map{|i| ([@key] + @foreign_keys)[i].public_key}
+        expected_public_keys = [2, 1, 0].map{|i| ([@key] + @foreign_keys)[i].public_key}
         expect(public_keys).to eq expected_public_keys
 
         expect(sig.verify(message, public_keys)).to be true

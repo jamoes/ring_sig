@@ -5,17 +5,15 @@ module RingSig
     attr_reader :group
 
     # @return [#digest]
-    attr_reader :hash_algorithm
+    attr_reader :algorithm
 
     # Creates a new instance of {Hasher}.
     #
-    # @param opts [Hash]
-    # @option opts :group [ECDSA::Group]
-    # @option opts :hash_algorithm [#digest]
-    def initialize(opts = {})
-      @group = opts.delete(:group) { RingSig.default_group }
-      @hash_algorithm = opts.delete(:hash_algorithm) { RingSig.default_hash_algorithm }
-      raise ArgumentError, "Unknown opts: #{opts.keys.join(', ')}" unless opts.empty?
+    # @param group [ECDSA::Group]
+    # @param algorithm [#digest]
+    def initialize(group, algorithm)
+      @group = group
+      @algorithm = algorithm
     end
 
     # Continuously hashes until a value less than the group's order is found.
@@ -25,7 +23,7 @@ module RingSig
     def hash_string(s)
       n = nil
       loop do
-        s = @hash_algorithm.digest(s)
+        s = algorithm.digest(s)
         n = s.unpack('H*').first.to_i(16)
         break if n < @group.order
       end
@@ -76,6 +74,10 @@ module RingSig
       array
     end
 
+    def ==(other)
+      group == other.group && algorithm == other.algorithm
+    end
+
     private
 
     # Deterministically returns a random number between 0 and n.
@@ -91,5 +93,11 @@ module RingSig
         return r % n if r < @group.order - @group.order % n
       end
     end
+
+    Secp256k1_Sha256 = new(ECDSA::Group::Secp256k1, OpenSSL::Digest::SHA256)
+    Secp256r1_Sha256 = new(ECDSA::Group::Secp256r1, OpenSSL::Digest::SHA256)
+    Secp384r1_Sha384 = new(ECDSA::Group::Secp384r1, OpenSSL::Digest::SHA384)
+    Secp160k1_Ripemd160 = new(ECDSA::Group::Secp160k1, OpenSSL::Digest::RIPEMD160)
+    Secp160r1_Ripemd160 = new(ECDSA::Group::Secp160r1, OpenSSL::Digest::RIPEMD160)
   end
 end
