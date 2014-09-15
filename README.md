@@ -46,60 +46,93 @@ at RubyGems.org.  To install it, run:
 
 ## Usage
 
+### Initialization
+
 First, require the gem:
+
 ```ruby
 require 'ring_sig'
 ```
 
-Next, create a private key for signing. For our example, we'll just use the
-private key `1`. In the wild, you'll want to utilize a securely generated key.
+Instantiate a hasher. This specifies the `ECDSA::Group`, and the hash algorithm
+that will be used for signing.
+
 ```ruby
-key = RingSig::PrivateKey.new(1)
+hasher = RingSig::Hasher::Secp256k1_Sha256
 ```
 
-Next, access a set a foreign public keys for signing. To demonstrate that any
+Create a private key for signing. For our example, we'll just use the
+private key `1`. In the wild, you'll want to utilize a securely generated key.
+
+```ruby
+key = RingSig::PrivateKey.new(1, hasher)
+```
+
+Instantiate a set a foreign public keys for signing. To demonstrate that any
 arbitrary keys can be used, we'll use the public keys from the coinbase
-transactions of the first three blocks on the bitcoin blockchain.
+transactions of the first three blocks on the bitcoin blockchain (we can do this
+since our hasher uses Secp256k1 as its `ECDSA::Group`).
 
 ```ruby
 foreign_keys = %w{
     04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f
     0496b538e853519c726a2c91e61ec11600ae1390813a627c66fb8be7947be63c52da7589379515d4e0a604f8141781e62294721166bf621e73a82cbf2342c858ee
     047211a824f55b505228e4c3d5194c1fcfaa15a456abdf37f9b9d97a4040afc073dee6c89064984f03385237d92167c13e236446b417ab79a0fcae412ae3316b77
-  }.map {|s| RingSig::PublicKey.from_hex(s) }
+  }.map {|s| RingSig::PublicKey.from_hex(s, hasher) }
 ```
+
+### Signing
 
 Next, we sign the message. This will assign a `RingSig::Signature` to the `sig`
 variable, and a deterministically shuffled Array of `RingSig::PublicKey`s to the
 `public_keys` variable.
+
 ```ruby
 sig, public_keys = key.sign("Hello World!", foreign_keys)
 ```
 
-You can see the signature contents by using the `to_hex` method:
+You can encode the contents of the signature using the `to_hex` method:
+
 ```ruby
-puts sig.to_hex
+sig_hex = sig.to_hex
+```
+
+### Verifying
+In order to verify the signature, the verifier will need the signature, and the
+ordered set of public keys.
+
+In order to instantiate a signature object from a hex string, you can use the
+`from_hex` method:
+
+```ruby
+sig2 = RingSig::Signature.from_hex(sig_hex, hasher)
 ```
 
 Finally, verify the signature:
+
 ```ruby
-sig.verify("Hello World!", public_keys)
+sig2.verify("Hello World!", public_keys)
 ```
 
-By default, this gem uses SHA256 for its hash algorithm, and Secp256k1 for its
-ECDSA group. You can specify alternates if you'd like:
+### Algorithms
+
+The above example signature used Secp256k1 for the ECDSA group, and SHA256 for
+the hash algorithm. You can specify alternates if you'd like, by using a
+different hasher:
+
 ```ruby
-key = RingSig::PrivateKey.new(1, group: ECDSA::Group::Secp256r1, hash_algorithm: OpenSSL::Digest::RIPEMD160)
+key = RingSig::PrivateKey.new(1, RingSig::Hasher::Secp384r1_Sha384)
 ```
 
-You can also specify module-wide alternate defaults:
+You can also instantiate your own hasher directly, rather than using the
+pre-defined constants:
+
 ```ruby
-RingSig.default_group = ECDSA::Group::Secp256r1
-RingSig.default_hash_algorithm = OpenSSL::Digest::RIPEMD160
-key = RingSig::PrivateKey.new(1)
-puts key.group # ECDSA::Group::Secp256r1
-puts key.hash_algorithm # OpenSSL::Digest::RIPEMD160
+hasher = RingSig::Hasher.new(ECDSA::Group::Secp384r1, OpenSSL::Digest::SHA384)
 ```
+
+Note that the byte-length of the group's order and the digest method must match,
+or else the signatures generated will leak the position of the true signer.
 
 ## Standards
 

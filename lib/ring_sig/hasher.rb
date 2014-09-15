@@ -9,6 +9,10 @@ module RingSig
 
     # Creates a new instance of {Hasher}.
     #
+    # @note The byte-length of the group's order and the digest method must
+    #   match, or else signatures generated from this hasher will leak the
+    #   position of the true signer.
+    #
     # @param group [ECDSA::Group]
     # @param algorithm [#digest]
     def initialize(group, algorithm)
@@ -74,6 +78,7 @@ module RingSig
       array
     end
 
+    # @return [Boolean] true if the hashers are equal.
     def ==(other)
       group == other.group && algorithm == other.algorithm
     end
