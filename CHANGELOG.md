@@ -5,6 +5,24 @@ This gem follows [Semantic Versioning 2.0.0](http://semver.org/spec/v2.0.0.html)
 All classes and public methods are part of the public API, unless explicitly
 noted otherwise in their documentation.
 
+0.3.0
+----
+Released on 2014-09-15
+
+This release breaks API compatibility with version 0.2.0.
+
+- Change `PrivateKey`, `PublicKey`, and `Signature` constructors such that they
+  accept a required `Hasher` argument rather than an optional `ECDSA::Group` and
+  `hash_algorithm`. The `Hasher` encapsulates these properties.
+- Change `Hasher` constructor so that `group` and `hash_algorithm` attributes
+  are passed in as explicit arguments rather than options.
+- Remove `RingSig.default_group` and `RingSig.defaut_hash_algorithm` attributes.
+  There are now no default algorithms.
+- Update gem dependency for `ecdsa` gem to 1.2.
+
+This will hopefully be the last major API change for a while, but it still may
+change until 1.0 is released.
+
 0.2.0
 ----
 Released on 2014-09-12
