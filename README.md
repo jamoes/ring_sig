@@ -169,7 +169,7 @@ for this gem.
 
 ## Supported platforms
 
-Ruby 2.0.0 and above.
+Ruby 1.9.3 and above, including jruby-19mode.
 
 ## Documentation
 
