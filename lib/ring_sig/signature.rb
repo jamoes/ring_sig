@@ -19,7 +19,7 @@ module RingSig
     # @param c_array [Array<Integer>]
     # @param r_array [Array<Integer>]
     # @param hasher [Hasher]
-    def initialize(key_image, c_array, r_array, hasher = RingSig::Hasher::Secp256k1_Sha256)
+    def initialize(key_image, c_array, r_array, hasher)
       @key_image, @c_array, @r_array = key_image, c_array, r_array
       key_image.is_a?(ECDSA::Point) or raise ArgumentError, 'key_image is not an ECDSA::Point.'
       c_array.is_a?(Array) or raise ArgumentError, 'c_array is not an array.'
@@ -33,7 +33,7 @@ module RingSig
     # @param der_string [String]
     # @param hasher [Hasher]
     # @return [Signature]
-    def self.from_der(der_string, hasher = RingSig::Hasher::Secp256k1_Sha256)
+    def self.from_der(der_string, hasher)
       asn1 = OpenSSL::ASN1.decode(der_string)
 
       key_image = ECDSA::Format::PointOctetString.decode(asn1.value[0].value, hasher.group)
@@ -48,7 +48,7 @@ module RingSig
     # @param hex_string [String]
     # @param hasher [Hasher]
     # @return [Signature]
-    def self.from_hex(hex_string, hasher = RingSig::Hasher::Secp256k1_Sha256)
+    def self.from_hex(hex_string, hasher)
       Signature.from_der([hex_string].pack('H*'), hasher)
     end
 

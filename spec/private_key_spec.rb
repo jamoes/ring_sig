@@ -1,7 +1,8 @@
 require 'spec_helper'
 
 describe RingSig::PrivateKey do
-  key = RingSig::PrivateKey.new(1)
+  hasher = RingSig::Hasher::Secp256k1_Sha256
+  key = RingSig::PrivateKey.new(1, hasher)
   key_hex = '0000000000000000000000000000000000000000000000000000000000000001'
   group = ECDSA::Group::Secp256k1
   message = 'a'
@@ -10,14 +11,14 @@ describe RingSig::PrivateKey do
       04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f
       0496b538e853519c726a2c91e61ec11600ae1390813a627c66fb8be7947be63c52da7589379515d4e0a604f8141781e62294721166bf621e73a82cbf2342c858ee
       047211a824f55b505228e4c3d5194c1fcfaa15a456abdf37f9b9d97a4040afc073dee6c89064984f03385237d92167c13e236446b417ab79a0fcae412ae3316b77
-    }.map {|s| RingSig::PublicKey.from_hex(s) }
+    }.map {|s| RingSig::PublicKey.from_hex(s, hasher) }
 
   it 'raises ArgumentError if value is too small' do
-    expect { RingSig::PrivateKey.new(0) }.to raise_error(ArgumentError)
+    expect { RingSig::PrivateKey.new(0, hasher) }.to raise_error(ArgumentError)
   end
 
   it 'raises ArgumentError if value is too large' do
-    expect { RingSig::PrivateKey.new(group.order) }.to raise_error(ArgumentError)
+    expect { RingSig::PrivateKey.new(group.order, hasher) }.to raise_error(ArgumentError)
   end
 
   describe '#key_image' do
@@ -47,7 +48,7 @@ describe RingSig::PrivateKey do
 
   describe '#from_hex' do
     it 'converts from hex' do
-      expect(RingSig::PrivateKey.from_hex(key_hex)).to eq key
+      expect(RingSig::PrivateKey.from_hex(key_hex, hasher)).to eq key
     end
   end
 
@@ -59,18 +60,18 @@ describe RingSig::PrivateKey do
 
   describe '#from_octet' do
     it 'converts from octet' do
-      expect(RingSig::PrivateKey.from_octet([key_hex].pack('H*'))).to eq key
+      expect(RingSig::PrivateKey.from_octet([key_hex].pack('H*'), hasher)).to eq key
     end
   end
 
   describe '==' do
     it 'returns true when keys are the same' do
       expect(key).to eq key
-      expect(RingSig::PrivateKey.new(key.value) == key).to eq true
+      expect(RingSig::PrivateKey.new(key.value, hasher) == key).to eq true
     end
 
     it 'returns false when keys are different' do
-      expect(RingSig::PrivateKey.new(2) == key).to eq false
+      expect(RingSig::PrivateKey.new(2, hasher) == key).to eq false
     end
   end
 

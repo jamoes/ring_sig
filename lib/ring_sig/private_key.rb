@@ -18,7 +18,7 @@ module RingSig
     #
     # @param value [Integer]
     # @param hasher [Hasher]
-    def initialize(value, hasher = RingSig::Hasher::Secp256k1_Sha256)
+    def initialize(value, hasher)
       raise ArgumentError, "Value is not an integer" unless value.is_a?(Integer)
       raise ArgumentError, "Value is too small" if value < 1
       raise ArgumentError, "Value is too large" if value >= hasher.group.order
@@ -33,7 +33,7 @@ module RingSig
     # @param hex_string [String]
     # @param hasher [Hasher]
     # @return [PrivateKey]
-    def self.from_hex(hex_string, hasher = RingSig::Hasher::Secp256k1_Sha256)
+    def self.from_hex(hex_string, hasher)
       self.from_octet([hex_string].pack('H*'), hasher)
     end
 
@@ -42,7 +42,7 @@ module RingSig
     # @param octet_string [String]
     # @param hasher [Hasher]
     # @return [PrivateKey]
-    def self.from_octet(octet_string, hasher = RingSig::Hasher::Secp256k1_Sha256)
+    def self.from_octet(octet_string, hasher)
       value = ECDSA::Format::FieldElementOctetString.decode(octet_string, hasher.group.field)
       PrivateKey.new(value, hasher)
     end

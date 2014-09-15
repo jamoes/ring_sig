@@ -14,7 +14,7 @@ module RingSig
     #
     # @param point [ECDSA::Point]
     # @param hasher [Hasher]
-    def initialize(point, hasher = RingSig::Hasher::Secp256k1_Sha256)
+    def initialize(point, hasher)
       raise ArgumentError, "Point is not an ECDSA::Point" unless point.is_a?(ECDSA::Point)
       raise ArgumentError, "Point is not on the group's curve" unless hasher.group.include?(point)
 
@@ -27,7 +27,7 @@ module RingSig
     # @param hex_string [String]
     # @param hasher [Hasher]
     # @return [PublicKey]
-    def self.from_hex(hex_string, hasher = RingSig::Hasher::Secp256k1_Sha256)
+    def self.from_hex(hex_string, hasher)
       self.from_octet([hex_string].pack('H*'), hasher)
     end
 
@@ -36,7 +36,7 @@ module RingSig
     # @param octet_string [String]
     # @param hasher [Hasher]
     # @return [PublicKey]
-    def self.from_octet(octet_string, hasher = RingSig::Hasher::Secp256k1_Sha256)
+    def self.from_octet(octet_string, hasher)
       point = ECDSA::Format::PointOctetString.decode(octet_string, hasher.group)
       PublicKey.new(point, hasher)
     end
