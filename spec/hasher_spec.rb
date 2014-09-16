@@ -90,4 +90,10 @@ describe RingSig::Hasher do
       end
     end
   end
+
+  context 'Non-matching byte-lengths' do
+    it 'raises an ArgumentError if group byte length does not match the hash algorithm byte-length' do
+      expect { RingSig::Hasher.new(ECDSA::Group::Secp256k1, OpenSSL::Digest::RIPEMD160) }.to raise_error(ArgumentError)
+    end
+  end
 end

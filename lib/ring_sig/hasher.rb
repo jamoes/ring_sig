@@ -18,6 +18,11 @@ module RingSig
     def initialize(group, algorithm)
       @group = group
       @algorithm = algorithm
+
+      algorithm_byte_length = algorithm.digest('a').size
+      if group.byte_length != algorithm_byte_length
+        raise ArgumentError, "Group's byte length (#{group.byte_length}), does not match hash algorithm's byte length (#{algorithm_byte_length})"
+      end
     end
 
     # Continuously hashes until a value less than the group's order is found.
