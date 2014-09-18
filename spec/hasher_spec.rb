@@ -50,10 +50,10 @@ describe RingSig::Hasher do
     end
   end
 
-  context 'Simple hasher, simple group' do
+  context 'Simple hash algorithm, simple group' do
     let(:group) do
-      # A simple group with order equal to 200
-      ECDSA::Group.new(name: 'simple', p: 1, a: 1, b: 1, g: [0, 1], n: 200, h: 1)
+      # A simple 8-bit group with order equal to 200
+      ECDSA::Group.new(name: 'simple', p: 211, a: 1, b: 1, g: [0, 1], n: 200, h: 1)
     end
 
     let(:hash_algorithm) do
@@ -61,7 +61,7 @@ describe RingSig::Hasher do
       stub_const 'SimpleHashAlgorithm', Class.new
       SimpleHashAlgorithm.class_eval do
         def self.digest(s)
-          [(OpenSSL::Digest::SHA256.hexdigest(s).to_i(16) % 256).to_s(16)].pack('H*')
+          [OpenSSL::Digest::SHA256.hexdigest(s)[-2,2]].pack('H*')
         end
       end
       SimpleHashAlgorithm
@@ -77,23 +77,51 @@ describe RingSig::Hasher do
     end
     it_behaves_like 'hash algorithm', 'a',    "\xBB" # 187
     it_behaves_like 'hash algorithm', '0',    "\xE9" # 233
-    it_behaves_like 'hash algorithm', "\xE9", "\xD0" # 208
-    it_behaves_like 'hash algorithm', "\xD0", "\x15" # 21
+    it_behaves_like 'hash algorithm', "\xE9", "\r"   # 13
 
     describe '#hash_string' do
       it 'hashes "a" to 187' do
         expect(hasher.hash_string('a')).to eq 187
       end
 
-      it 'hashes "0" to 21' do
-        expect(hasher.hash_string('0')).to eq 21
+      it 'hashes "0" to 13' do
+        expect(hasher.hash_string('0')).to eq 13
       end
     end
   end
 
+  context 'Curve25519-like group' do
+    # This gem is not yet compatible with Curve25519, but we still test the
+    # hasher against it. Curve25519 has a distinct characteristic: its
+    # order is much smaller than its prime.
+    let(:group) do
+      ECDSA::Group.new(name: 'Curve25519-like', p: 2**255-19, a: 1, b: 1, g: [0, 1], n: 2**252+27742317777372353535851937790883648493, h: 1)
+    end
+
+    let(:hasher) { RingSig::Hasher.new(group, OpenSSL::Digest::SHA256) }
+
+    describe '#hash_string' do
+      it 'hashes "a"' do
+        expect(hasher.hash_string('a')).to eq 4790813224456470967164382530524007151295684942355166730955189790754105481631
+      end
+
+      it 'hashes "0"' do
+        expect(hasher.hash_string('0')).to eq 7203293323279838689554303289673273753938185156274697627287051646710131340360
+      end
+    end
+
+  end
+
   context 'Non-matching byte-lengths' do
-    it 'raises an ArgumentError if group byte length does not match the hash algorithm byte-length' do
-      expect { RingSig::Hasher.new(ECDSA::Group::Secp256k1, OpenSSL::Digest::RIPEMD160) }.to raise_error(ArgumentError)
+    it 'raises an ArgumentError if group byte length does not match the hash algorithm byte length' do
+      expect { RingSig::Hasher.new(ECDSA::Group::Secp256k1, OpenSSL::Digest::SHA224) }.to raise_error(ArgumentError)
     end
   end
+
+  context 'ECDSA group with an order larger than the maximum digest size' do
+    it 'raises an ArgumentError' do
+      expect { RingSig::Hasher.new(ECDSA::Group::Secp160k1, OpenSSL::Digest::RIPEMD160) }.to raise_error(ArgumentError)
+    end
+  end
+
 end

@@ -23,20 +23,27 @@ module RingSig
       if group.byte_length != algorithm_byte_length
         raise ArgumentError, "Group's byte length (#{group.byte_length}), does not match hash algorithm's byte length (#{algorithm_byte_length})"
       end
+
+      digest_max = 2 ** (algorithm_byte_length * 8) - 1
+      if digest_max < group.order
+        raise ArgumentError, "Invalid ECDSA group. Group's order must be less than the hash algorithm's maximum value"
+      end
+
+      @hash_cieling = digest_max - digest_max % group.order
     end
 
-    # Continuously hashes until a value less than the group's order is found.
+    # Uniformly hashes a string to a number between 0 and the group's order.
     #
-    # @param s (String) The value to be hashed.
+    # @param s (String) The string to be hashed.
     # @return (Integer) A number between 0 and the group's order.
     def hash_string(s)
       n = nil
       loop do
         s = algorithm.digest(s)
         n = s.unpack('H*').first.to_i(16)
-        break if n < @group.order
+        break if n < @hash_cieling
       end
-      n
+      n % group.order
     end
 
     # Hashes an array. Converts the Array to an OpenSSL::ASN1::Sequence der
@@ -64,7 +71,8 @@ module RingSig
     # Hashes a point to another point.
     #
     # @param point [ECDSA::Point] The point to be hashed.
-    # @return [ECDSA::Point] A new point, deterministically computed from the input point.
+    # @return [ECDSA::Point] A new point, deterministically computed from the
+    #   input point.
     def hash_point(point)
       @group.generator * hash_array(point.coords)
     end
@@ -72,7 +80,8 @@ module RingSig
     # Shuffles an array in a deterministic manner.
     #
     # @param array (Array) The array to be shuffled.
-    # @param seed (Integer) A random seed which determines the outcome of the suffle.
+    # @param seed (Integer) A random seed which determines the outcome of the
+    #   shuffle.
     # @return (Array) The shuffled array.
     def shuffle(array, seed)
       seed_array = [seed, 0]
@@ -107,7 +116,5 @@ module RingSig
     Secp256k1_Sha256 = new(ECDSA::Group::Secp256k1, OpenSSL::Digest::SHA256)
     Secp256r1_Sha256 = new(ECDSA::Group::Secp256r1, OpenSSL::Digest::SHA256)
     Secp384r1_Sha384 = new(ECDSA::Group::Secp384r1, OpenSSL::Digest::SHA384)
-    Secp160k1_Ripemd160 = new(ECDSA::Group::Secp160k1, OpenSSL::Digest::RIPEMD160)
-    Secp160r1_Ripemd160 = new(ECDSA::Group::Secp160r1, OpenSSL::Digest::RIPEMD160)
   end
 end
