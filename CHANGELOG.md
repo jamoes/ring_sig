@@ -5,6 +5,27 @@ This gem follows [Semantic Versioning 2.0.0](http://semver.org/spec/v2.0.0.html)
 All classes and public methods are part of the public API, unless explicitly
 noted otherwise in their documentation.
 
+0.4.0
+----
+Release on 2014-09-18
+
+This release maintains API compatibility with version 0.3.0, except for the two
+constants that were removed.
+
+Signatures produced with prior versions may be incompatible with signatures from
+this version.
+
+- Change the `Hasher#hash_string` method so that it can handle ECDSA groups
+  that have a much smaller order than the number of bits they have (such as
+  Curve25519).
+- `Hasher` now validates that its group's byte-length is equal to its hash
+  algorithm's byte-length.
+- Remove support for ECDSA groups that have an order larger than the number of
+  bits they have. Secp160k1 and Secp160r1 fall into this category because their
+  order is larger than 2^160.
+- Remove the `Secp160k1_Ripemd160` and `Secp160r1_Ripemd160` constants, since
+  their groups are no longer supported.
+
 0.3.0
 ----
 Released on 2014-09-15
