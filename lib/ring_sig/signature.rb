@@ -92,8 +92,8 @@ module RingSig
       rr_array = []
 
       public_keys.each_with_index do |k, i|
-        ll_array[i] = (hasher.group.generator * r_array[i]) + (k.point * c_array[i])
-        rr_array[i] = (hasher.hash_point(k.point) * (r_array[i]) + key_image * c_array[i])
+        ll_array[i] = hasher.group.generator * r_array[i] + k.point * c_array[i]
+        rr_array[i] = hasher.hash_point(k.point) * r_array[i] + key_image * c_array[i]
       end
 
       c_sum = c_array.inject{|a, b| a + b} % hasher.group.order
